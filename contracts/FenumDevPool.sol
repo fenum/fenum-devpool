@@ -80,7 +80,7 @@ contract FenumDevPool is Context {
     return true;
   }
 
-  function crowdsaleSetRate(bool status) public onlyApprover returns (bool) {
+  function crowdsaleLaunch(bool status) public onlyApprover returns (bool) {
     return IFenumCrowdsale(_crowdsale).launch(status);
   }
 

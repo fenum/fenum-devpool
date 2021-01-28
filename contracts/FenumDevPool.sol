@@ -17,7 +17,9 @@ interface IERC20 {
 }
 
 interface IFenumCrowdsale {
+  function launch(bool status) external returns (bool);
   function setRate(uint256 rate_) external returns (bool);
+  function setWallet(address wallet_) external returns (bool);
   function tokensDeposit(uint256 amount) external returns (bool);
   function tokensWithdraw(uint256 amount) external returns (bool);
   function tokensTransfer(uint256 amount) external returns (bool);
@@ -58,9 +60,10 @@ contract FenumDevPool is Context {
   event TransferExecuted(uint256 indexed id, uint256 approvals, bool sent, address indexed token, uint256 amount, address indexed to);
   event ApprovershipTransferred(address indexed previousApprover, address indexed newApprover);
 
-  constructor(address[] memory approvers_, uint threshold_) public {
+  constructor(address[] memory approvers_, uint threshold_, address token_) public {
     _approvers = approvers_;
     _threshold = threshold_;
+    _token = token_;
   }
 
   function balance(address token) public view returns (uint256) {
@@ -77,8 +80,16 @@ contract FenumDevPool is Context {
     return true;
   }
 
+  function crowdsaleSetRate(bool status) public onlyApprover returns (bool) {
+    return IFenumCrowdsale(_crowdsale).launch(status);
+  }
+
   function crowdsaleSetRate(uint256 rate_) public onlyApprover returns (bool) {
     return IFenumCrowdsale(_crowdsale).setRate(rate_);
+  }
+
+  function crowdsaleSetWallet() public onlyApprover returns (bool) {
+    return IFenumCrowdsale(_crowdsale).setWallet(address(this));
   }
 
   function crowdsaleTokensDeposit(uint256 amount) public onlyApprover returns (bool) {

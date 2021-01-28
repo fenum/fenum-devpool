@@ -22,7 +22,6 @@ yarn run mnemonic
     - Указать параметры:
       - Массив из адресов ["0x","0x"] тех кто имеет право подписывать транзакции;
       - Пороговое число подписей после которого можно отправить транзакцию, не больше количества подписантов;
-      - Адрес `FenumVesting` (VESTING_ADDRESS).
     - Нажать кнопку `Deploy`.
   - Верификация контракта на `Etherscan`:
     - Открыть контракт во вкладке `Contract`;
@@ -36,9 +35,13 @@ yarn run mnemonic
     - Открыть `(Runs, EvmVersion & License Type settings)`;
     - `Runs`: `999999`;
     - Нажать `Verify and Publish`.
-  - Добавление получателей в вестинг:
-    - В контракте `FenumToken` cделать `approve` на адрес `FenumDevPool` (в MetaMask или Etherscan) в точном количестве FNM которые предназанчены для получателя (!децимал помним);
-    - В контракте `FenumDevPool` cделать `createVestingSchedule` (в MetaMask или Etherscan): адрес получателя и количество FNM (!децимал помним);
+  - установить адрес пресейла setCrowdsale CROWDSALE_ADDRESS
+  - установить адрес вестинга setCrowdsale VESTING_ADDRESS
+
+  - создать траназакцию на вывод из FenumDevPool - createTransferETH или createTransferERC20
+  - подписать транзакцию - approveTransfer
+  - выполнить транзакцию - executeTransfer
+  - забрать токены из вестинга - vestingDrawDown
 
 
 

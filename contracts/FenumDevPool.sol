@@ -13,18 +13,34 @@ library SafeMath {
 interface IERC20 {
   function balanceOf(address account) external view returns (uint256);
   function transfer(address recipient, uint256 amount) external returns (bool);
+  function approve(address spender, uint256 amount) external returns (bool);
+}
+
+interface IFenumCrowdsale {
+  function setRate(uint256 rate_) external returns (bool);
+  function tokensDeposit(uint256 amount) external returns (bool);
+  function tokensWithdraw(uint256 amount) external returns (bool);
+  function tokensTransfer(uint256 amount) external returns (bool);
 }
 
 interface IFenumVesting {
   function drawDown() external returns (bool);
 }
 
+abstract contract Context {
+  function _msgSender() internal view virtual returns (address payable) {
+    return msg.sender;
+  }
+}
 
-contract FenumDevPool {
+
+contract FenumDevPool is Context {
   using SafeMath for uint256;
   address[] private _approvers;
   uint256 private _threshold;
+  address private _token;
   address private _vesting;
+  address private _crowdsale;
 
   struct Transfer {
     uint256 id;
@@ -42,18 +58,50 @@ contract FenumDevPool {
   event TransferExecuted(uint256 indexed id, uint256 approvals, bool sent, address indexed token, uint256 amount, address indexed to);
   event ApprovershipTransferred(address indexed previousApprover, address indexed newApprover);
 
-  constructor(address[] memory approvers_, uint threshold_, address vesting_) public {
+  constructor(address[] memory approvers_, uint threshold_) public {
     _approvers = approvers_;
     _threshold = threshold_;
-    _vesting = vesting_;     // VESTING_ADDRESS
   }
 
   function balance(address token) public view returns (uint256) {
     return IERC20(token).balanceOf(address(this));
   }
 
+  function crowdsale() public view returns (address) {
+    return _crowdsale;
+  }
+
+  function setCrowdsale(address crowdsale_) public onlyApprover returns (bool) {
+    require(crowdsale_ != address(0), "FenumDevPool: New crowdsale is the zero address");
+    _crowdsale = crowdsale_;
+    return true;
+  }
+
+  function crowdsaleSetRate(uint256 rate_) public onlyApprover returns (bool) {
+    return IFenumCrowdsale(_crowdsale).setRate(rate_);
+  }
+
+  function crowdsaleTokensDeposit(uint256 amount) public onlyApprover returns (bool) {
+    IERC20(_token).approve(_crowdsale, amount);
+    return IFenumCrowdsale(_crowdsale).tokensDeposit(amount);
+  }
+
+  function crowdsaleTokensWithdraw(uint256 amount) public onlyApprover returns (bool) {
+    return IFenumCrowdsale(_crowdsale).tokensWithdraw(amount);
+  }
+
+  function crowdsaleTokensTransfer(uint256 amount) public onlyApprover returns (bool) {
+    return IFenumCrowdsale(_crowdsale).tokensTransfer(amount);
+  }
+
   function vesting() public view returns (address) {
     return _vesting;
+  }
+
+  function setVesting(address vesting_) public onlyApprover returns (bool) {
+    require(vesting_ != address(0), "FenumDevPool: New vesting is the zero address");
+    _vesting = vesting_;
+    return true;
   }
 
   function vestingDrawDown() public {
@@ -155,10 +203,6 @@ contract FenumDevPool {
       }
     }
     return (found, index);
-  }
-
-  function _msgSender() internal view virtual returns (address payable) {
-    return msg.sender;
   }
 
   modifier onlyApprover() {

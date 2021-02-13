@@ -53,7 +53,7 @@ contract FenumDevPool is Context {
     address payable to;
   }
 
-  Transfer[] private _transfers;
+  Transfer[] public transfers;
   mapping(address => mapping(uint256 => bool)) private _approvals;
 
   event TransferCreated(uint256 indexed id, uint256 approvals, bool sent, address indexed token, uint256 amount, address indexed to);
@@ -80,7 +80,7 @@ contract FenumDevPool is Context {
     return true;
   }
 
-  function crowdsaleLaunch(bool status) public onlyApprover returns (bool) {
+  function crowdsaleSetRate(bool status) public onlyApprover returns (bool) {
     return IFenumCrowdsale(_crowdsale).launch(status);
   }
 
@@ -135,16 +135,8 @@ contract FenumDevPool is Context {
     return _approvers.length;
   }
 
-  function transfer(uint256 id) public view returns(Transfer memory) {
-    return _transfers[id];
-  }
-
-  function transfers() public view returns(Transfer[] memory) {
-    return _transfers;
-  }
-
   function transfersLength() public view returns (uint256) {
-    return _transfers.length;
+    return transfers.length;
   }
 
   function createTransferETH(uint256 amount, address payable to) external onlyApprover returns (uint256) {
@@ -157,22 +149,22 @@ contract FenumDevPool is Context {
 
   function approveTransfer(uint256 id) public onlyApprover returns (bool) {
     address msgSender = _msgSender();
-    require(_transfers[id].sent == false, "FenumDevPool: Transfer has already sent");
+    require(transfers[id].sent == false, "FenumDevPool: Transfer has already sent");
     require(_approvals[msgSender][id] == false, "FenumDevPool: Cannot approve transfer twice");
     _approvals[msgSender][id] = true;
-    _transfers[id].approvals = _transfers[id].approvals.add(1);
+    transfers[id].approvals = transfers[id].approvals.add(1);
     return true;
   }
 
   function executeTransfer(uint256 id) public onlyApprover returns (bool) {
-    if (_transfers[id].approvals >= _threshold) {
-      if (_transfers[id].token == address(0)) {
+    if (transfers[id].approvals >= _threshold) {
+      if (transfers[id].token == address(0)) {
         require(_executeTransferETH(id), "FenumDevPool: Failed to transfer Ethers");
       } else {
         require(_executeTransferERC20(id), "FenumDevPool: Failed to transfer ERC20 tokens");
       }
-      _transfers[id].sent = true;
-      emit TransferExecuted(_transfers[id].id, _transfers[id].approvals, _transfers[id].sent, _transfers[id].token, _transfers[id].amount, _transfers[id].to);
+      transfers[id].sent = true;
+      emit TransferExecuted(transfers[id].id, transfers[id].approvals, transfers[id].sent, transfers[id].token, transfers[id].amount, transfers[id].to);
       return true;
     }
     return false;
@@ -189,18 +181,18 @@ contract FenumDevPool is Context {
   function _createTransfer(address token, uint256 amount, address payable to) internal returns (uint256) {
     require(to != address(0), "FenumDevPool: to is the zero address");
     require(amount > 0, "FenumDevPool: amount must be greater than 0");
-    uint256 id = _transfers.length;
-    _transfers.push(Transfer(id, 0, false, token, amount, to));
+    uint256 id = transfers.length;
+    transfers.push(Transfer(id, 0, false, token, amount, to));
     emit TransferCreated(id, 0, false, token, amount, to);
     return id;
   }
 
   function _executeTransferETH(uint256 id) internal returns (bool) {
-    return _transfers[id].to.send(_transfers[id].amount);
+    return transfers[id].to.send(transfers[id].amount);
   }
 
   function _executeTransferERC20(uint256 id) internal returns (bool) {
-    return IERC20(_transfers[id].token).transfer(_transfers[id].to, _transfers[id].amount);
+    return IERC20(transfers[id].token).transfer(transfers[id].to, transfers[id].amount);
   }
 
   function _approverIndex(address approver) internal view returns (bool, uint256) {
